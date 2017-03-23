@@ -34,30 +34,23 @@ class Client:
 					if(txt[0]=='login'):
 						payload=json.dumps({'request': 'login', 'content':text[1]})
 						self.send_payload(payload)
-						break;
 					elif(txt[0]=='msg'):
 						payload=json.dumps({'request': 'msg', 'content':text[1]})
 						self.send_payload(payload)
-						break;
 					elif(txt[0]=='names'):
 						payload=json.dumps({'request': 'names', 'content':text[1]})
 						self.send_payload(payload)
-						break;
 					elif(txt[0]=='logout'):
 						payload=json.dumps({'request': 'logout', 'content':text[1]})
 						self.send_payload(payload)
-						break;
 					elif(txt[0]=='help'):
 						payload=json.dumps({'request': 'help', 'content':text[1]})
 						self.send_payload(payload)
-						break;
 					elif(txt[0]=='history'):
 						payload=json.dumps({'request': 'history', 'content':text[1]})
 						self.send_payload(payload)
-						break;
 					else:
 						print('Oh oh! No such command, type "help" to see all possible commands')
-					}
 				else:	
 					print('Oh oh! No such command, type "help" to see all possible commands')
 					

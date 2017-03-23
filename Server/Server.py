@@ -68,6 +68,27 @@ class ClientHandler(SocketServer.BaseRequestHandler):
 			self.connection.close()
 			history.append(msg)
 
+	def message(self, recieved_msg):
+		if self.user not in onlineUsers:
+			self.error('Invalid request. Not logged in')
+		else:
+			msg = {'timestamp': datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'),'sender': [self.user],'response': 'message','content': received:msg['content']}
+			payload = json.dumps(msg)
+			for user in onlineUsers:
+				user.sendPayload(payload)
+			history.append(msg)
+
+
+	def names(self. recieve_msg):
+		if self.user not in onlineUsers:
+			self.error('Invalid request. Not logged in')
+		else:
+			names = ""
+			for user in onlineUsers:
+				names += user.user
+			msg = {'timestamp': datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'),'sender': [self.user],'response': 'message','content': received:msg['content']}
+			payload = json.dumps(msg)
+
 
 class ThreadedTCPServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
     """

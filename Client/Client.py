@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-import socket
+import socket,time,json
 from MessageReceiver import MessageReceiver
 from MessageParser import MessageParser
 
@@ -17,6 +17,8 @@ class Client:
         self.connection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         
         # TODO: Finish init process with necessary code
+	self.host = host
+	self.server_port = server_port
         self.run()
 
     def run(self):

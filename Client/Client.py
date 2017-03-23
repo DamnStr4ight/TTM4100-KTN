@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-import socket,sys,codecs,json
+import socket, sys, codecs, json
 from MessageReceiver import MessageReceiver
 from MessageParser import MessageParser
 
@@ -13,47 +13,46 @@ class Client:
 		This method is run when creating a new Client object
 		"""
 
-		# Set up the socket connection to the server
-		self.connection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         
 		# TODO: Finish init process with necessary code
 		self.host = host
 		self.server_port = server_port
+		self.connection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		self.run()
 
-		def run(self):
+	def run(self):
 		# Initiate the connection to the server
-			self.connection.connect((self.host, self.server_port))
-			self.thread= MessageReciever(self, self.connect)
-			self.thread.start()
-			while True:
-				txt = input().split(' ',1)#Split on first space
-				if(len(txt) > 0 and len(txt) < 3): # Dont accept more than 2 arguments
-					if(len(txt)==1):
-						txt.append('')#What if short input?
-					if(txt[0]=='login'):
-						payload=json.dumps({'request': 'login', 'content':text[1]})
-						self.send_payload(payload)
-					elif(txt[0]=='msg'):
-						payload=json.dumps({'request': 'msg', 'content':text[1]})
-						self.send_payload(payload)
-					elif(txt[0]=='names'):
-						payload=json.dumps({'request': 'names', 'content':text[1]})
-						self.send_payload(payload)
-					elif(txt[0]=='logout'):
-						payload=json.dumps({'request': 'logout', 'content':text[1]})
-						self.send_payload(payload)
-					elif(txt[0]=='help'):
-						payload=json.dumps({'request': 'help', 'content':text[1]})
-						self.send_payload(payload)
-					elif(txt[0]=='history'):
-						payload=json.dumps({'request': 'history', 'content':text[1]})
-						self.send_payload(payload)
-					else:
-						print('Oh oh! No such command, type "help" to see all possible commands')
-				else:	
+		self.connection.connect((self.host, self.server_port))
+		self.thread= MessageReceiver(self, self.connection)
+		self.thread.start()
+		while True:
+			txt = input().split(' ',1)#Split on first space
+			if(len(txt) > 0 and len(txt) < 3): # Dont accept more than 2 arguments
+				if(len(txt)==1):
+					txt.append('')#What if short input?
+				if(txt[0]=='login'):
+					payload=json.dumps({'request': 'login', 'content':txt[1]})
+					self.send_payload(payload)
+				elif(txt[0]=='msg'):
+					payload=json.dumps({'request': 'msg', 'content':txt[1]})
+					self.send_payload(payload)
+				elif(txt[0]=='names'):
+					payload=json.dumps({'request': 'names', 'content':txt[1]})
+					self.send_payload(payload)
+				elif(txt[0]=='logout'):
+					payload=json.dumps({'request': 'logout', 'content':txt[1]})
+					self.send_payload(payload)
+				elif(txt[0]=='help'):
+					payload=json.dumps({'request': 'help', 'content':txt[1]})
+					self.send_payload(payload)
+				elif(txt[0]=='history'):
+					payload=json.dumps({'request': 'history', 'content':txt[1]})
+					self.send_payload(payload)
+				else:
 					print('Oh oh! No such command, type "help" to see all possible commands')
-					
+			else:	
+				print('Oh oh! No such command, type "help" to see all possible commands')
+			
 
 
 
@@ -72,7 +71,7 @@ class Client:
 
 	def send_payload(self, data):
 		# TODO: Handle sending of a payload
-		self.connection.send(bytes(data, 'uft-8'))
+		self.connection.send(bytes(data, 'utf-8'))
 		# More methods may be needed!
 
 

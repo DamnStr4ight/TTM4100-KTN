@@ -1,5 +1,9 @@
 # -*- coding: utf-8 -*-
 import SocketServer
+import json
+import re
+import time
+import datetime
 
 """
 Variables and functions that must be used by all the ClientHandler objects
@@ -9,26 +13,60 @@ onlineUsers = set()
 history = []
 
 class ClientHandler(SocketServer.BaseRequestHandler):
-    """
-    This is the ClientHandler class. Everytime a new client connects to the
-    server, a new ClientHandler object will be created. This class represents
-    only connected clients, and not the server itself. If you want to write
-    logic for the server, you must write it outside this class
-    """
 
-    def handle(self):
-        """
-        This method handles the connection between a client and the server.
-        """
-        self.ip = self.client_address[0]
-        self.port = self.client_address[1]
-        self.connection = self.request
+	def handle(self):
+       	"""
+       	This method handles the connection between a client and the server.
+       	"""
+		self.ip = self.client_address[0]
+		self.port = self.client_address[1]
+		self.connection = self.request
+		self.user = None
 
-        # Loop that listens for messages from the client
-        while True:
-            received_string = self.connection.recv(4096)
+		self.possible_requests = {
+			'login': self.login,
+			'logout': self.logout,
+			'msg': self.message,
+			'history': self.history,
+			'users': self.users,
+			'help': self.help
+		}
+		# Loop that listens for messages from the client	
+		while True:
+	    	received_string = self.connection.recv(4096)
             
             # TODO: Add handling of received payload from client
+
+
+	def history(self):
+		if self.user not in onlineUsers:
+			self.error('Access denied. Not logged in')
+		else:
+			payload = {'timestamp': datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'),'sender': [Server],'response': 'history','content': history }
+
+
+	def login(self, recieved_msg):
+		if re.match("^[A-Za-z0-9_-]+$", recieved_msg['content']):
+			self.user = recieved_msg['content']
+			print(self.user, 'logged in')
+			self.history(recieved_msg)
+			msg = {'timestamp': datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'),'sender': [Server],'response': 'info','content': self.user + 'connected'}
+			payload = json.dumps(msg)
+			for user in onlineUsers:
+				user.send_payload(payload)
+			history.append(msg)
+
+	def logout(self):
+		if self.user not in onlineUsers:
+			self.error('Invalid request. Not logged in')
+		else:
+			msg = {'timestamp': datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'),'sender': [Server],'response': 'info','content': self.user + 'logged out'}
+			payload = json.dumps(msg)
+			for user in onlineUsers:
+				user.send_payload(payload)
+			onlineUsers.remove(self)
+			self.connection.close()
+			history.append(msg)
 
 
 class ThreadedTCPServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
@@ -38,7 +76,7 @@ class ThreadedTCPServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
 
     No alterations are necessary
     """
-    allow_reuse_address = True
+	allow_reuse_address = True
 
 if __name__ == "__main__":
     """
@@ -47,9 +85,9 @@ if __name__ == "__main__":
 
     No alterations are necessary
     """
-    HOST, PORT = 'localhost', 9998
-    print 'Server running...'
+	HOST, PORT = 'localhost', 9998
+	print 'Server running...'
 
     # Set up and initiate the TCP server
-    server = ThreadedTCPServer((HOST, PORT), ClientHandler)
-    server.serve_forever()
+	server = ThreadedTCPServer((HOST, PORT), ClientHandler)
+	server.serve_forever()

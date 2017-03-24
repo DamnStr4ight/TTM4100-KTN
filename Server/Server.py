@@ -10,31 +10,37 @@ Variables and functions that must be used by all the ClientHandler objects
 must be written here (e.g. a dictionary for connected clients)
 """
 onlineUsers = set()
+connectedUsers = []
 history = []
+
 
 class ClientHandler(SocketServer.BaseRequestHandler):
 
 	def handle(self):
 		"""
-       		This method handles the connection between a client and the server.
+       		This method handles the connection between a client and the 			server.
 		"""
 		self.ip = self.client_address[0]
 		self.port = self.client_address[1]
 		self.connection = self.request
 		self.user = None
 
+		connectedUsers.append(self)
+
 		self.possible_requests = {
 			'login': self.login,
 			'logout': self.logout,
 			'msg': self.message,
 			'history': self.history,
-			'users': self.users,
+			'names': self.names,
 			'help': self.help
 		}
+
+		
 		# Loop that listens for messages from the client	
 		while True:
-			received_msg =json.loads(self.connection.recv(4096).decode('UTF-8'))
-			print(recieved_msg)
+			received_msg =json.loads(self.connection.recv(4096).decode('utf-8'))
+			print(received_msg)
 
 			if received_msg['request'] in self.possible_requests:
 				self.possible_requests[received_msg['request']](received_msg)
@@ -43,33 +49,35 @@ class ClientHandler(SocketServer.BaseRequestHandler):
             
 
 
-	def history(self):
+	def history(self, received_msg):
 		if self.user not in onlineUsers:
-			self.error('Access denied. Not logged in')
+			self.error('Access denied strongly. Not logged in')
 		else:
-			payload = {'timestamp': datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M'),'sender': [Server],'response': 'history','content': history }
+			payload = {'timestamp': datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M'),'sender': ['Server'],'response': 'history','content': print(*history,sep='\n')}
+
 
 
 	def login(self, received_msg):
 		if re.match("^[A-Za-z0-9_-]+$", received_msg['content']):
 			self.user = received_msg['content']
+			onlineUsers.add(self.user)
 			print(self.user, 'logged in')
-			self.history(recieved_msg)
-			msg = {'timestamp': datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M'),'sender': [Server],'response': 'info','content': self.user + 'connected'}
+			self.history(received_msg)
+			msg = {'timestamp': datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'),'sender': ['Server'],'response': 'info','content': self.user + ' connected'}
 			payload = json.dumps(msg)
-			for user in onlineUsers:
+			for user in connectedUsers:
 				user.send_payload(payload)
 			history.append(msg)
 
-	def logout(self):
+	def logout(self, received_msg):
 		if self.user not in onlineUsers:
 			self.error('Invalid request. Not logged in')
 		else:
-			msg = {'timestamp': datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M'),'sender': [Server],'response': 'info','content': self.user + 'logged out'}
+			msg = {'timestamp': datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M'),'sender': ['Server'],'response': 'info','content': self.user + 'logged out'}
 			payload = json.dumps(msg)
-			for user in onlineUsers:
+			for user in connectedUsers:
 				user.send_payload(payload)
-			onlineUsers.remove(self)
+			onlineUsers.remove(self.user)
 			self.connection.close()
 			history.append(msg)
 
@@ -77,28 +85,28 @@ class ClientHandler(SocketServer.BaseRequestHandler):
 		if self.user not in onlineUsers:
 			self.error('Invalid request. Not logged in')
 		else:
-			msg = {'timestamp': datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M'),'sender': [self.user],'response': 'message','content': received_msg['content']}
+			msg = {'timestamp': datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M'),'sender': [self.user],'response': 'message','content': received_msg['content']}
 			payload = json.dumps(msg)
-			for user in onlineUsers:
-				user.sendPayload(payload)
+			for user in connectedUsers:
+				user.send_payload(payload)
 			history.append(msg)
 
 
-	def names(self):
-		if self.user not in onlineUsers:
+	def names(self, received_msg):
+		if self.user not in onlineUsers:	
 			self.error('Invalid request. Not logged in')
 		else:
 			names = ""
-			for user in onlineUsers:
+			for user in connectedUsers:
 				names += user.user
-			msg = {'timestamp': datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M'),'sender': [Server],'response': 'info','content': names}
+			msg = {'timestamp': datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M'),'sender': ['Server'],'response': 'info','content': names}
 			payload = json.dumps(msg)
 			self.send_payload(payload)
 
 
-	def help(self):
-		help_box = 'To be written'
-		msg = {'timestamp': datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M'),'sender': [self.user],'response': 'info','content': help_box}
+	def help(self, reveived_msg):
+		help_box = 'These commands are available:\n{login username}:Grants access to the chat service\n{msg message}: Writes a post on the main board\n{help}: Shows valid commands\n{history}: Shows a log over all posts on the main board, their posters, and the time of posting\n{names}: Shows allusers currently online\n{logout}: logs out of the chat service'
+		msg = {'timestamp': datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M'),'sender': [self.user],'response': 'info','content': help_box}
 		payload = json.dumps(msg)
 		self.send_payload(payload)
 
@@ -106,7 +114,7 @@ class ClientHandler(SocketServer.BaseRequestHandler):
 		self.connection.send(bytes(data, 'UTF-8'))
 
 	def error(self, msg):
-		msg = {'timestamp': datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M'),'sender': [],'response': 'error','content': msg}
+		msg = {'timestamp': datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M'),'sender': [],'response': 'error','content': msg}
 		payload = json.dumps(msg)
 		self.send_payload(payload)
 		
@@ -117,7 +125,7 @@ class ThreadedTCPServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
 
 if __name__ == "__main__":
 
-	HOST, PORT = 'localhost', 9998
+	HOST, PORT = '', 9998
 	print('Server running...')
 
 	# Set up and initiate the TCP server
